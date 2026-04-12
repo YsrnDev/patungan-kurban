@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Build artifacts
+build/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime / temp files
+tmp/
+temp/
+*.tmp
+
+# Generated caches
+.cache/
+.turbo/
+.eslintcache
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+nul
+NUL
+**/[Nn][Uu][Ll]
+**/[Nn][Uu][Ll].*
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local tooling
+.vercel/
+
+# Misc
+*.pid
+*.seed
