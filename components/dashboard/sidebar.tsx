@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 import { LogoutButton } from '@/components/auth/logout-button';
 import { BrandLogo } from '@/components/brand-logo';
@@ -31,7 +31,7 @@ export function DashboardSidebar({ userEmail, role, isAdmin }: DashboardSidebarP
             textClassName="min-w-0"
             eyebrowClassName="text-[10px] tracking-[0.22em] text-amber-700 dark:text-gold"
             titleAs="h1"
-            titleClassName="mt-0.5 truncate font-serif-display text-lg leading-tight text-pine dark:text-stone-100"
+            titleClassName="mt-0.5 truncate font-serif-display text-[15px] leading-tight text-pine dark:text-stone-100"
           />
         </Link>
 
@@ -48,27 +48,22 @@ export function DashboardSidebar({ userEmail, role, isAdmin }: DashboardSidebarP
 
       <div className="dashboard-sidebar-footer">
         <div className="dashboard-sidebar-account">
-          <div className="dashboard-sidebar-account-header">
-            <div className="min-w-0 flex-1">
-              <p className="dashboard-sidebar-account-email">{userEmail}</p>
-              <div className="mt-2">
+          <div className="dashboard-sidebar-account-row">
+            <div className="dashboard-sidebar-account-copy">
+              <div className="dashboard-sidebar-account-meta">
+                <p className="dashboard-sidebar-account-email">{userEmail}</p>
                 <span className={roleBadgeClassName}>{roleLabel}</span>
               </div>
             </div>
             <LogoutButton
-              iconOnly
               className="dashboard-sidebar-logout"
-              formClassName="shrink-0"
+              formClassName="dashboard-sidebar-logout-form"
+              iconClassName="h-[22px] w-[22px]"
+              iconOnly
             />
           </div>
         </div>
-
-        <div className="flex flex-col gap-2">
-          <Link href="/register" className="button-muted w-full justify-center px-3 py-2 text-xs">
-            Lihat Halaman Jamaah
-          </Link>
-          <ThemeToggle variant="sidebar" />
-        </div>
+        <ThemeToggle variant="sidebar-segmented" className="dashboard-sidebar-theme-toggle" />
       </div>
     </aside>
   );
@@ -161,7 +156,6 @@ export function DashboardMobileHeader() {
 
 export function DashboardMobileNav({ isAdmin }: Pick<DashboardSidebarProps, 'isAdmin'>) {
   const pathname = usePathname();
-  const router = useRouter();
   const navItems = getVisibleDashboardNavItems(isAdmin);
   const mobileNavStyle = { '--dashboard-mobile-nav-count': navItems.length } as React.CSSProperties;
 
@@ -173,18 +167,17 @@ export function DashboardMobileNav({ isAdmin }: Pick<DashboardSidebarProps, 'isA
           const Icon = item.icon;
 
           return (
-            <button
+            <Link
               key={item.href}
-              type="button"
+              href={item.href}
               className={`dashboard-mobile-nav-link ${active ? 'dashboard-mobile-nav-link-active' : ''}`}
               aria-current={active ? 'page' : undefined}
-              onClick={() => router.push(item.href)}
             >
               <span className="dashboard-mobile-nav-icon">
                 <Icon className="h-5 w-5" />
               </span>
               <span className="dashboard-mobile-nav-label">{item.label}</span>
-            </button>
+            </Link>
           );
         })}
       </div>

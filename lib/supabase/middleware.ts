@@ -14,13 +14,20 @@ function isDashboardPath(pathname: string) {
 }
 
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', request.nextUrl.pathname);
+
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   if (!getSupabasePublicEnvStatus().isConfigured) {
     if (isDashboardPath(request.nextUrl.pathname)) {
       const loginUrl = new URL('/auth/login', request.url);
       loginUrl.searchParams.set('next', request.nextUrl.pathname);
-      loginUrl.searchParams.set('error', 'Konfigurasi Supabase publik belum lengkap.');
+      loginUrl.searchParams.set('error', 'supabase_env_missing');
       return NextResponse.redirect(loginUrl);
     }
 
@@ -34,7 +41,11 @@ export async function updateSession(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        });
         cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },

@@ -1,11 +1,12 @@
 import Link from 'next/link';
-import { Users, Shield, Plus } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 import { AddStaffModal } from '@/components/dashboard/add-staff-modal';
 import { StaffUserTable } from '@/components/dashboard/staff-user-table';
 import { AppAlert } from '@/components/ui/app-alert';
 import { PageHeader } from '@/components/ui/page-header';
 import { requireAdminUser } from '@/lib/auth';
+import { resolveStaffFlash } from '@/lib/flash';
 import { listStaffUsers } from '@/lib/services/staff-user-service';
 
 interface StaffPageProps {
@@ -19,6 +20,8 @@ interface StaffPageProps {
 export default async function StaffPage({ searchParams }: StaffPageProps) {
   const { user } = await requireAdminUser({ next: '/dashboard/staff' });
   const staffUsers = await listStaffUsers();
+  const successFlash = resolveStaffFlash(searchParams.success);
+  const errorFlash = resolveStaffFlash(searchParams.error);
 
   return (
     <div className="section-gap-md">
@@ -34,34 +37,13 @@ export default async function StaffPage({ searchParams }: StaffPageProps) {
         }
       />
 
-      {searchParams.success ? (
-        <AppAlert tone="success">{searchParams.success}</AppAlert>
+      {successFlash ? (
+        <AppAlert tone={successFlash.tone}>{successFlash.message}</AppAlert>
       ) : null}
 
-      {searchParams.error ? (
-        <AppAlert tone="error">{searchParams.error}</AppAlert>
+      {errorFlash ? (
+        <AppAlert tone={errorFlash.tone}>{errorFlash.message}</AppAlert>
       ) : null}
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-pine/10 text-pine dark:bg-pine/20 dark:text-emerald-100">
-            <Users className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-sm text-stone-500 dark:text-stone-400">Total Staff</p>
-            <p className="text-2xl font-bold text-pine dark:text-stone-100">{staffUsers.length}</p>
-          </div>
-        </div>
-
-        <Link
-          href="/dashboard/staff?modal=add"
-          className="button-primary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
-        >
-          <Plus className="h-4 w-4" />
-          Tambah Staff
-        </Link>
-      </div>
-
       <StaffUserTable staffUsers={staffUsers} currentUserEmail={user.email} />
 
       <AddStaffModal />

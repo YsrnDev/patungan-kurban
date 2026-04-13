@@ -13,7 +13,7 @@ function applyTheme(mode: ThemeMode) {
   root.style.colorScheme = mode;
 }
 
-type ThemeToggleVariant = 'default' | 'compact' | 'sidebar' | 'mobile-header' | 'icon-only' | 'public-header-icon';
+type ThemeToggleVariant = 'default' | 'compact' | 'sidebar' | 'sidebar-segmented' | 'mobile-header' | 'icon-only' | 'public-header-icon';
 
 interface ThemeToggleProps {
   className?: string;
@@ -35,13 +35,48 @@ export function ThemeToggle({ className = '', variant = 'default', onToggle, lab
     setMounted(true);
   }, []);
 
-  function toggleTheme() {
-    const nextTheme: ThemeMode = theme === 'dark' ? 'light' : 'dark';
-
+  function setThemeMode(nextTheme: ThemeMode) {
     setTheme(nextTheme);
     applyTheme(nextTheme);
     window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
     onToggle?.();
+  }
+
+  function toggleTheme() {
+    const nextTheme: ThemeMode = theme === 'dark' ? 'light' : 'dark';
+
+    setThemeMode(nextTheme);
+  }
+
+  if (variant === 'sidebar-segmented') {
+    return (
+      <div
+        className={`theme-toggle theme-toggle-${variant} ${className}`.trim()}
+        role="group"
+        aria-label="Pilih tema dashboard"
+      >
+        <button
+          type="button"
+          className={`theme-toggle-segment ${theme === 'light' ? 'theme-toggle-segment-active' : ''}`.trim()}
+          onClick={() => setThemeMode('light')}
+          aria-pressed={theme === 'light'}
+          aria-label="Aktifkan mode terang"
+          title="Aktifkan mode terang"
+        >
+          Terang
+        </button>
+        <button
+          type="button"
+          className={`theme-toggle-segment ${theme === 'dark' ? 'theme-toggle-segment-active' : ''}`.trim()}
+          onClick={() => setThemeMode('dark')}
+          aria-pressed={theme === 'dark'}
+          aria-label="Aktifkan mode gelap"
+          title="Aktifkan mode gelap"
+        >
+          Gelap
+        </button>
+      </div>
+    );
   }
 
   return (

@@ -1,10 +1,18 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { logAuditEvent } from '@/lib/audit';
 import { requireAdminUser, requireOperationalUser } from '@/lib/auth';
 import type { AppRole } from '@/lib/config/authz';
+import {
+  getGroupErrorFlashCode,
+  getParticipantErrorFlashCode,
+  getStaffErrorFlashCode,
+  type RegisterFlashCode,
+} from '@/lib/flash';
 import {
   addParticipantByAdmin,
   createGroup,
@@ -30,22 +38,77 @@ function asString(value: FormDataEntryValue | null): string {
   return typeof value === 'string' ? value : '';
 }
 
-function handleActionError(error: unknown, fallbackMessage: string, path: string) {
-  const message =
+function redirectWithFlash(path: string, key: 'success' | 'error', code: string) {
+  redirect(`${path}?${key}=${encodeURIComponent(code)}`);
+}
+
+function getActionErrorMessage(error: unknown, fallbackMessage: string) {
+  return (
     error instanceof ValidationError ||
     error instanceof StaffUsersTableMissingError ||
     error instanceof StaffUserAlreadyExistsError ||
     error instanceof StaffUserNotFoundError
       ? error.message
-      : fallbackMessage;
-  redirect(`${path}?error=${encodeURIComponent(message)}`);
+      : fallbackMessage
+  );
 }
 
-async function requireOperationalActionAccess(path: string) {
-  await requireOperationalUser({ next: path });
+function handleActionError(path: string, code: string) {
+  redirectWithFlash(path, 'error', code);
+}
+
+const PUBLIC_REGISTRATION_COOLDOWN_COOKIE = 'public_registration_cooldown';
+const PUBLIC_REGISTRATION_COOLDOWN_SECONDS = 45;
+const PUBLIC_REGISTRATION_MIN_FILL_TIME_MS = 3_000;
+
+function setPublicRegistrationCooldown() {
+  const cookieStore = cookies();
+
+  cookieStore.set(PUBLIC_REGISTRATION_COOLDOWN_COOKIE, String(Date.now()), {
+    httpOnly: true,
+    maxAge: PUBLIC_REGISTRATION_COOLDOWN_SECONDS,
+    path: '/register',
+    sameSite: 'lax',
+  });
+}
+
+function isPublicRegistrationBlockedByCooldown() {
+  const cookieStore = cookies();
+
+  return cookieStore.has(PUBLIC_REGISTRATION_COOLDOWN_COOKIE);
+}
+
+function isSuspiciousPublicRegistrationSubmission(formData: FormData) {
+  const honeypot = asString(formData.get('website')).trim();
+  if (honeypot) {
+    return true;
+  }
+
+  const submittedAt = Number(asString(formData.get('submittedAt')));
+  if (!Number.isFinite(submittedAt) || submittedAt <= 0) {
+    return true;
+  }
+
+  return Date.now() - submittedAt < PUBLIC_REGISTRATION_MIN_FILL_TIME_MS;
+}
+
+function buildAuditActor(context: Awaited<ReturnType<typeof requireOperationalUser>> | Awaited<ReturnType<typeof requireAdminUser>>) {
+  return {
+    userId: context.user.id,
+    email: context.user.email,
+    role: context.staffUser.role,
+  };
 }
 
 export async function submitPublicRegistration(formData: FormData) {
+  if (isPublicRegistrationBlockedByCooldown()) {
+    redirectWithFlash('/register', 'error', 'registration_cooldown');
+  }
+
+  if (isSuspiciousPublicRegistrationSubmission(formData)) {
+    redirectWithFlash('/register', 'error', 'registration_failed');
+  }
+
   try {
     await registerParticipant({
       fullName: asString(formData.get('fullName')),
@@ -55,84 +118,116 @@ export async function submitPublicRegistration(formData: FormData) {
       groupId: asString(formData.get('groupId')),
     });
   } catch (error) {
-    handleActionError(error, 'Pendaftaran gagal disimpan.', '/register');
+    const hasKnownValidationError = error instanceof ValidationError;
+    const errorCode: RegisterFlashCode = hasKnownValidationError ? 'registration_failed' : 'registration_failed';
+    redirectWithFlash('/register', 'error', errorCode);
   }
 
+  setPublicRegistrationCooldown();
   revalidatePath('/');
   revalidatePath('/register');
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/groups');
   revalidatePath('/dashboard/participants');
-  redirect('/register?success=Pendaftaran%20berhasil%20disimpan');
+  redirectWithFlash('/register', 'success', 'registration_submitted');
 }
 
 export async function createGroupAction(formData: FormData) {
-  await requireOperationalActionAccess('/dashboard/groups');
+  const context = await requireOperationalUser({ next: '/dashboard/groups' });
 
   try {
-    await createGroup({
+    const group = await createGroup({
       name: asString(formData.get('name')),
       animalType: asString(formData.get('animalType')) as AnimalType,
       pricePerSlot: Number(asString(formData.get('pricePerSlot'))),
       status: asString(formData.get('status')) as GroupStatus,
       notes: asString(formData.get('notes')),
     });
+    await logAuditEvent({
+      action: 'group.create',
+      entityType: 'group',
+      entityId: group.id,
+      actor: buildAuditActor(context),
+      metadata: { animalType: group.animalType, status: group.status },
+    });
   } catch (error) {
-    handleActionError(error, 'Gagal membuat grup.', '/dashboard/groups');
+    handleActionError(
+      '/dashboard/groups',
+      getGroupErrorFlashCode(getActionErrorMessage(error, 'Gagal membuat grup.'), 'group_create_failed'),
+    );
   }
 
   revalidatePath('/');
   revalidatePath('/register');
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/groups');
-  redirect('/dashboard/groups?success=Grup%20baru%20berhasil%20ditambahkan');
+  redirectWithFlash('/dashboard/groups', 'success', 'group_created');
 }
 
 export async function updateGroupAction(formData: FormData) {
   const groupId = asString(formData.get('groupId'));
-  await requireOperationalActionAccess('/dashboard/groups');
+  const context = await requireOperationalUser({ next: '/dashboard/groups' });
 
   try {
-    await updateGroup(groupId, {
+    const group = await updateGroup(groupId, {
       name: asString(formData.get('name')),
       animalType: asString(formData.get('animalType')) as AnimalType,
       pricePerSlot: Number(asString(formData.get('pricePerSlot'))),
       status: asString(formData.get('status')) as GroupStatus,
       notes: asString(formData.get('notes')),
     });
+    await logAuditEvent({
+      action: 'group.update',
+      entityType: 'group',
+      entityId: group.id,
+      actor: buildAuditActor(context),
+      metadata: { animalType: group.animalType, status: group.status },
+    });
   } catch (error) {
-    handleActionError(error, 'Gagal memperbarui grup.', '/dashboard/groups');
+    handleActionError(
+      '/dashboard/groups',
+      getGroupErrorFlashCode(getActionErrorMessage(error, 'Gagal memperbarui grup.'), 'group_update_failed'),
+    );
   }
 
   revalidatePath('/');
   revalidatePath('/register');
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/groups');
-  redirect('/dashboard/groups?success=Grup%20berhasil%20diperbarui');
+  redirectWithFlash('/dashboard/groups', 'success', 'group_updated');
 }
 
 export async function deleteGroupAction(formData: FormData) {
   const groupId = asString(formData.get('groupId'));
-  await requireOperationalActionAccess('/dashboard/groups');
+  const context = await requireOperationalUser({ next: '/dashboard/groups' });
 
   try {
     await deleteGroup(groupId);
+    await logAuditEvent({
+      action: 'group.delete',
+      entityType: 'group',
+      entityId: groupId,
+      actor: buildAuditActor(context),
+    });
   } catch (error) {
-    handleActionError(error, 'Gagal menghapus grup.', '/dashboard/groups');
+    handleActionError(
+      '/dashboard/groups',
+      getGroupErrorFlashCode(getActionErrorMessage(error, 'Gagal menghapus grup.'), 'group_delete_failed'),
+    );
   }
 
   revalidatePath('/');
   revalidatePath('/register');
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/groups');
-  redirect('/dashboard/groups?success=Grup%20berhasil%20dihapus');
+  redirectWithFlash('/dashboard/groups', 'success', 'group_deleted');
 }
 
 export async function addParticipantAction(formData: FormData) {
-  await requireOperationalActionAccess('/dashboard/participants');
+  const context = await requireOperationalUser({ next: '/dashboard/participants' });
 
   try {
-    await addParticipantByAdmin({
+    const participant = await addParticipantByAdmin({
       fullName: asString(formData.get('fullName')),
       phone: asString(formData.get('phone')),
       city: asString(formData.get('city')),
@@ -140,64 +235,105 @@ export async function addParticipantAction(formData: FormData) {
       groupId: asString(formData.get('groupId')),
       paymentStatus: asString(formData.get('paymentStatus')) as PaymentStatus,
     });
+    await logAuditEvent({
+      action: 'participant.create',
+      entityType: 'participant',
+      entityId: participant.id,
+      actor: buildAuditActor(context),
+      metadata: { groupId: participant.groupId, paymentStatus: participant.paymentStatus },
+    });
   } catch (error) {
-    handleActionError(error, 'Gagal menambahkan peserta.', '/dashboard/participants');
+    handleActionError(
+      '/dashboard/participants',
+      getParticipantErrorFlashCode(getActionErrorMessage(error, 'Gagal menambahkan peserta.'), 'participant_add_failed'),
+    );
   }
 
   revalidatePath('/');
   revalidatePath('/register');
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/participants');
-  redirect('/dashboard/participants?success=Peserta%20berhasil%20ditambahkan');
+  redirectWithFlash('/dashboard/participants', 'success', 'participant_added');
 }
 
 export async function moveParticipantAction(formData: FormData) {
-  await requireOperationalActionAccess('/dashboard/participants');
+  const context = await requireOperationalUser({ next: '/dashboard/participants' });
+  const participantId = asString(formData.get('participantId'));
+  const targetGroupId = asString(formData.get('targetGroupId'));
 
   try {
-    await moveParticipant(asString(formData.get('participantId')), asString(formData.get('targetGroupId')));
+    const participant = await moveParticipant(participantId, targetGroupId);
+    await logAuditEvent({
+      action: 'participant.move',
+      entityType: 'participant',
+      entityId: participant.id,
+      actor: buildAuditActor(context),
+      metadata: { groupId: participant.groupId, targetGroupId },
+    });
   } catch (error) {
-    handleActionError(error, 'Gagal memindahkan peserta.', '/dashboard/participants');
+    handleActionError(
+      '/dashboard/participants',
+      getParticipantErrorFlashCode(getActionErrorMessage(error, 'Gagal memindahkan peserta.'), 'participant_move_failed'),
+    );
   }
 
   revalidatePath('/');
   revalidatePath('/register');
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/participants');
-  redirect('/dashboard/participants?success=Peserta%20berhasil%20dipindahkan');
+  redirectWithFlash('/dashboard/participants', 'success', 'participant_moved');
 }
 
 export async function updatePaymentStatusAction(formData: FormData) {
-  await requireOperationalActionAccess('/dashboard/participants');
+  const context = await requireOperationalUser({ next: '/dashboard/participants' });
+  const participantId = asString(formData.get('participantId'));
+  const paymentStatus = asString(formData.get('paymentStatus')) as PaymentStatus;
 
   try {
-    await updateParticipantPayment(
-      asString(formData.get('participantId')),
-      asString(formData.get('paymentStatus')) as PaymentStatus,
-    );
+    const participant = await updateParticipantPayment(participantId, paymentStatus);
+    await logAuditEvent({
+      action: 'participant.payment.update',
+      entityType: 'participant',
+      entityId: participant.id,
+      actor: buildAuditActor(context),
+      metadata: { paymentStatus: participant.paymentStatus },
+    });
   } catch (error) {
-    handleActionError(error, 'Gagal memperbarui status pembayaran.', '/dashboard/participants');
+    handleActionError(
+      '/dashboard/participants',
+      getParticipantErrorFlashCode(getActionErrorMessage(error, 'Gagal memperbarui status pembayaran.'), 'participant_payment_failed'),
+    );
   }
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/participants');
-  redirect('/dashboard/participants?success=Status%20pembayaran%20berhasil%20diperbarui');
+  redirectWithFlash('/dashboard/participants', 'success', 'participant_payment_updated');
 }
 
 export async function deleteParticipantAction(formData: FormData) {
-  await requireOperationalActionAccess('/dashboard/participants');
+  const context = await requireOperationalUser({ next: '/dashboard/participants' });
+  const participantId = asString(formData.get('participantId'));
 
   try {
-    await deleteParticipant(asString(formData.get('participantId')));
+    await deleteParticipant(participantId);
+    await logAuditEvent({
+      action: 'participant.delete',
+      entityType: 'participant',
+      entityId: participantId,
+      actor: buildAuditActor(context),
+    });
   } catch (error) {
-    handleActionError(error, 'Gagal menghapus peserta.', '/dashboard/participants');
+    handleActionError(
+      '/dashboard/participants',
+      getParticipantErrorFlashCode(getActionErrorMessage(error, 'Gagal menghapus peserta.'), 'participant_delete_failed'),
+    );
   }
 
   revalidatePath('/');
   revalidatePath('/register');
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/participants');
-  redirect('/dashboard/participants?success=Peserta%20berhasil%20dihapus');
+  redirectWithFlash('/dashboard/participants', 'success', 'participant_deleted');
 }
 
 export async function logoutAction() {
@@ -208,67 +344,110 @@ export async function logoutAction() {
 }
 
 export async function createStaffUserAction(formData: FormData) {
-  const { user } = await requireAdminUser({ next: '/dashboard/staff' });
+  const context = await requireAdminUser({ next: '/dashboard/staff' });
 
   try {
-    await createStaffUser({
+    const staffUser = await createStaffUser({
       email: asString(formData.get('email')),
       fullName: asString(formData.get('fullName')),
       role: asString(formData.get('role')) as AppRole,
       notes: asString(formData.get('notes')),
-      invitedByEmail: user.email,
+      invitedByEmail: context.user.email,
+    });
+    await logAuditEvent({
+      action: 'staff_user.create',
+      entityType: 'staff_user',
+      entityId: staffUser.id,
+      actor: buildAuditActor(context),
+      metadata: { role: staffUser.role, email: staffUser.email },
     });
   } catch (error) {
-    handleActionError(error, 'Gagal menambahkan staff user.', '/dashboard/staff');
+    handleActionError(
+      '/dashboard/staff',
+      getStaffErrorFlashCode(getActionErrorMessage(error, 'Gagal menambahkan staff user.'), 'staff_create_failed'),
+    );
   }
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/staff');
-  redirect('/dashboard/staff?success=Staff%20user%20berhasil%20ditambahkan');
+  redirectWithFlash('/dashboard/staff', 'success', 'staff_created');
 }
 
 export async function updateStaffUserAction(formData: FormData) {
-  await requireAdminUser({ next: '/dashboard/staff' });
+  const context = await requireAdminUser({ next: '/dashboard/staff' });
+  const staffUserId = asString(formData.get('staffUserId'));
 
   try {
-    await updateStaffUser(asString(formData.get('staffUserId')), {
+    const staffUser = await updateStaffUser(staffUserId, {
       fullName: asString(formData.get('fullName')),
       role: asString(formData.get('role')) as AppRole,
       notes: asString(formData.get('notes')),
     });
+    await logAuditEvent({
+      action: 'staff_user.update',
+      entityType: 'staff_user',
+      entityId: staffUser.id,
+      actor: buildAuditActor(context),
+      metadata: { role: staffUser.role, email: staffUser.email },
+    });
   } catch (error) {
-    handleActionError(error, 'Gagal memperbarui staff user.', '/dashboard/staff');
+    handleActionError(
+      '/dashboard/staff',
+      getStaffErrorFlashCode(getActionErrorMessage(error, 'Gagal memperbarui staff user.'), 'staff_update_failed'),
+    );
   }
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/staff');
-  redirect('/dashboard/staff?success=Staff%20user%20berhasil%20diperbarui');
+  redirectWithFlash('/dashboard/staff', 'success', 'staff_updated');
 }
 
 export async function deactivateStaffUserAction(formData: FormData) {
-  await requireAdminUser({ next: '/dashboard/staff' });
+  const context = await requireAdminUser({ next: '/dashboard/staff' });
+  const staffUserId = asString(formData.get('staffUserId'));
 
   try {
-    await setStaffUserActiveStatus(asString(formData.get('staffUserId')), false);
+    const staffUser = await setStaffUserActiveStatus(staffUserId, false);
+    await logAuditEvent({
+      action: 'staff_user.deactivate',
+      entityType: 'staff_user',
+      entityId: staffUser.id,
+      actor: buildAuditActor(context),
+      metadata: { email: staffUser.email },
+    });
   } catch (error) {
-    handleActionError(error, 'Gagal menonaktifkan staff user.', '/dashboard/staff');
+    handleActionError(
+      '/dashboard/staff',
+      getStaffErrorFlashCode(getActionErrorMessage(error, 'Gagal menonaktifkan staff user.'), 'staff_deactivate_failed'),
+    );
   }
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/staff');
-  redirect('/dashboard/staff?success=Staff%20user%20berhasil%20dinonaktifkan');
+  redirectWithFlash('/dashboard/staff', 'success', 'staff_deactivated');
 }
 
 export async function reactivateStaffUserAction(formData: FormData) {
-  await requireAdminUser({ next: '/dashboard/staff' });
+  const context = await requireAdminUser({ next: '/dashboard/staff' });
+  const staffUserId = asString(formData.get('staffUserId'));
 
   try {
-    await setStaffUserActiveStatus(asString(formData.get('staffUserId')), true);
+    const staffUser = await setStaffUserActiveStatus(staffUserId, true);
+    await logAuditEvent({
+      action: 'staff_user.reactivate',
+      entityType: 'staff_user',
+      entityId: staffUser.id,
+      actor: buildAuditActor(context),
+      metadata: { email: staffUser.email },
+    });
   } catch (error) {
-    handleActionError(error, 'Gagal mengaktifkan kembali staff user.', '/dashboard/staff');
+    handleActionError(
+      '/dashboard/staff',
+      getStaffErrorFlashCode(getActionErrorMessage(error, 'Gagal mengaktifkan kembali staff user.'), 'staff_reactivate_failed'),
+    );
   }
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/staff');
-  redirect('/dashboard/staff?success=Staff%20user%20berhasil%20diaktifkan%20kembali');
+  redirectWithFlash('/dashboard/staff', 'success', 'staff_reactivated');
 }

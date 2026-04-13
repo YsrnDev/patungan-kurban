@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Users, Search, Filter, ArrowRightLeft, Trash2, CreditCard, MapPin, NotebookText } from 'lucide-react';
+import Link from 'next/link';
+import { Users, Search, ArrowRightLeft, Trash2, CreditCard, MapPin, Plus } from 'lucide-react';
 
 import {
   deleteParticipantAction,
@@ -64,40 +65,41 @@ export function ParticipantsManager({ groups, participants }: ParticipantsManage
               <h2 className="section-title mt-1">Kelola perpindahan dan pembayaran</h2>
             </div>
           </div>
-          <span className="table-toolbar-meta">
-            Menampilkan {filteredParticipants.length} dari {participants.length} peserta
-          </span>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-200">
-              <Search className="h-4 w-4" />
-              Cari peserta, grup, nomor, atau catatan
-            </label>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Contoh: Anwar, Sapi A, 0812, kuitansi"
+              aria-label="Cari peserta"
               className="touch-target-lg"
             />
           </div>
-          <div>
-            <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-200">
-              <Filter className="h-4 w-4" />
-              Filter pembayaran
-            </label>
-            <select
-              value={paymentFilter}
-              onChange={(event) => setPaymentFilter(event.target.value as 'all' | PaymentStatus)}
-              className="touch-target-lg"
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end lg:justify-end">
+            <div className="sm:w-[220px]">
+              <select
+                value={paymentFilter}
+                onChange={(event) => setPaymentFilter(event.target.value as 'all' | PaymentStatus)}
+                aria-label="Filter pembayaran"
+                className="touch-target-lg"
+              >
+                {paymentFilters.map((filter) => (
+                  <option key={filter.value} value={filter.value}>
+                    {filter.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Link
+              href="/dashboard/participants?modal=add"
+              className="button-primary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
             >
-              {paymentFilters.map((filter) => (
-                <option key={filter.value} value={filter.value}>
-                  {filter.label}
-                </option>
-              ))}
-            </select>
+              <Plus className="h-4 w-4" />
+              Tambah Peserta
+            </Link>
           </div>
         </div>
       </div>

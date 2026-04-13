@@ -1,4 +1,5 @@
-import { Users, Shield, UserCog, Power } from 'lucide-react';
+import Link from 'next/link';
+import { Users, Shield, UserCog, Power, Plus } from 'lucide-react';
 import { deactivateStaffUserAction, reactivateStaffUserAction, updateStaffUserAction } from '@/lib/actions';
 import { type StaffUserRecord } from '@/lib/services/staff-user-service';
 import { formatDate } from '@/lib/utils';
@@ -31,7 +32,16 @@ export function StaffUserTable({ staffUsers, currentUserEmail }: StaffUserTableP
             <h2 className="section-title mt-1">Kelola role dan status akses</h2>
           </div>
         </div>
-        <span className="table-toolbar-meta">{staffUsers.length} staff terdaftar</span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <span className="table-toolbar-meta">{staffUsers.length} staff terdaftar</span>
+          <Link
+            href="/dashboard/staff?modal=add"
+            className="button-primary inline-flex items-center justify-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Tambah Staff
+          </Link>
+        </div>
       </div>
 
       {hasStaff ? (

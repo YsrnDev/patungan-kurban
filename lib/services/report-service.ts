@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { unstable_noStore as noStore } from 'next/cache';
 
 import { getDashboardData } from '@/lib/services/qurban-service';
@@ -10,7 +12,7 @@ import type {
   ReportHighlightItem,
   ReportsSummary,
 } from '@/lib/types';
-import { formatCurrency, formatPercent, paymentStatusLabel } from '@/lib/utils';
+import { formatCurrency, formatPercent, getOccupancyProgress, paymentStatusLabel } from '@/lib/utils';
 import { getAnimalLabel } from '@/lib/validation';
 
 function makePaymentBreakdown(participants: ParticipantReportItem[]): PaymentStatusSummaryItem[] {
@@ -50,12 +52,12 @@ function makeGroupReportItems(data: Awaited<ReturnType<typeof getDashboardData>>
     const paymentPaidCount = group.participants.filter((participant) => participant.paymentStatus === 'paid').length;
     const paymentPartialCount = group.participants.filter((participant) => participant.paymentStatus === 'partial').length;
     const paymentPendingCount = group.participants.filter((participant) => participant.paymentStatus === 'pending').length;
-    const occupancyRate = group.capacity > 0 ? group.filledSlots / group.capacity : 0;
+    const occupancy = getOccupancyProgress(group.filledSlots, group.capacity);
 
     return {
       ...group,
-      occupancyRate,
-      occupancyLabel: formatPercent(occupancyRate, 0),
+      occupancyRate: occupancy.ratio,
+      occupancyLabel: occupancy.label,
       paymentPaidCount,
       paymentPartialCount,
       paymentPendingCount,
@@ -106,7 +108,7 @@ function makeReportsSummary(groups: GroupReportItem[], participants: Participant
     availableSlots: groups.filter((group) => group.status === 'open').reduce((total, group) => total + group.slotsLeft, 0),
     totalCapacity,
     occupiedSlots,
-    occupancyRate: totalCapacity > 0 ? occupiedSlots / totalCapacity : 0,
+    occupancyRate: getOccupancyProgress(occupiedSlots, totalCapacity).ratio,
     paidParticipants,
     partialParticipants,
     pendingParticipants,

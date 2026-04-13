@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { normalizeEmail, type AppRole } from '@/lib/config/authz';
 
 const STAFF_USERS_TABLE = 'staff_users';

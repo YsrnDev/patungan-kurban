@@ -35,6 +35,29 @@ export function formatPercent(value: number, digits = 0): string {
   }).format(value);
 }
 
+export interface OccupancyProgress {
+  filledSlots: number;
+  capacity: number;
+  ratio: number;
+  percent: number;
+  label: string;
+}
+
+export function getOccupancyProgress(filledSlots: number, capacity: number): OccupancyProgress {
+  const safeFilledSlots = Number.isFinite(filledSlots) ? Math.max(filledSlots, 0) : 0;
+  const safeCapacity = Number.isFinite(capacity) ? Math.max(capacity, 0) : 0;
+  const unclampedRatio = safeCapacity > 0 ? safeFilledSlots / safeCapacity : 0;
+  const ratio = Math.min(Math.max(unclampedRatio, 0), 1);
+
+  return {
+    filledSlots: safeFilledSlots,
+    capacity: safeCapacity,
+    ratio,
+    percent: ratio * 100,
+    label: formatPercent(ratio, 0),
+  };
+}
+
 export function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }

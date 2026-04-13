@@ -3,11 +3,12 @@ import { Users, Ticket, FolderOpen, AlertCircle, CheckCircle } from 'lucide-reac
 
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { EmptyState } from '@/components/dashboard/empty-state';
+import { GroupOccupancyProgress } from '@/components/dashboard/group-occupancy-progress';
+import { GroupStatusBadge } from '@/components/dashboard/group-status-badge';
 import { PaymentStatusBadge } from '@/components/dashboard/payment-status-badge';
-import { StatusBadge } from '@/components/status-badge';
 import { PageHeader } from '@/components/ui/page-header';
 import { getDashboardData } from '@/lib/services/qurban-service';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, getOccupancyProgress } from '@/lib/utils';
 import { getAnimalLabel } from '@/lib/validation';
 
 export default async function DashboardPage() {
@@ -22,10 +23,6 @@ export default async function DashboardPage() {
         eyebrow="Overview"
         title="Pantau progres pengisian slot dan tindak lanjut harian"
         description="Fokuskan perhatian pada grup yang hampir penuh, peserta baru masuk, dan status pembayaran yang masih perlu diproses."
-        actions={[
-          { href: '/dashboard/participants', label: 'Kelola Peserta', variant: 'primary' },
-          { href: '/dashboard/groups', label: 'Kelola Grup', variant: 'secondary' },
-        ]}
       />
 
       <section className="info-card flex items-start gap-3 px-4 py-3 sm:items-center sm:justify-between sm:px-5">
@@ -95,8 +92,10 @@ export default async function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {groups.map((group) => (
-                        <tr key={group.id}>
+                      {groups.map((group) => {
+                        const occupancy = getOccupancyProgress(group.filledSlots, group.capacity);
+
+                        return <tr key={group.id}>
                           <td>
                             <p className="font-semibold text-pine dark:text-stone-100">{group.name}</p>
                             <p className="text-xs text-stone-500 dark:text-stone-400">{formatCurrency(group.pricePerSlot)} / slot</p>
@@ -107,55 +106,58 @@ export default async function DashboardPage() {
                             <p className="text-xs text-stone-500 dark:text-stone-400">{group.filledSlots} / {group.capacity} slot</p>
                           </td>
                           <td>
-                            <div className="w-32">
-                              <div className="progress-track">
-                                <div
-                                  className={`progress-bar ${group.isUrgent ? 'progress-bar-ember' : group.isFull ? 'progress-bar-stone' : 'progress-bar-palm'}`}
-                                  style={{ width: `${(group.filledSlots / group.capacity) * 100}%` }}
-                                />
-                              </div>
-                              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{Math.round((group.filledSlots / group.capacity) * 100)}% terisi</p>
-                            </div>
-                          </td>
-                          <td>
-                            <StatusBadge
-                              label={group.isFull ? 'Penuh' : group.status === 'closed' ? 'Ditutup' : `Tersisa ${group.slotsLeft} slot`}
-                              tone={group.isFull ? 'muted' : group.isUrgent ? 'danger' : group.status === 'closed' ? 'warning' : 'success'}
+                            <GroupOccupancyProgress
+                              className="w-32"
+                              percent={occupancy.percent}
+                              barClassName={group.isUrgent ? 'progress-bar-ember' : group.isFull ? 'progress-bar-stone' : 'progress-bar-palm'}
+                              caption={`${occupancy.label} terisi`}
                             />
                           </td>
-                        </tr>
-                      ))}
+                          <td>
+                            <GroupStatusBadge
+                              status={group.status}
+                              isFull={group.isFull}
+                              isUrgent={group.isUrgent}
+                              slotsLeft={group.slotsLeft}
+                            />
+                          </td>
+                        </tr>;
+                      })}
                     </tbody>
                   </table>
                 </div>
               </div>
 
               <div className="space-y-2 p-3 sm:space-y-3 sm:p-4 lg:hidden">
-                {groups.map((group) => (
-                  <div key={group.id} className="list-row list-row-compact px-3 py-2.5 sm:p-4">
+                {groups.map((group) => {
+                  const occupancy = getOccupancyProgress(group.filledSlots, group.capacity);
+
+                  return <div key={group.id} className="list-row list-row-compact px-3 py-2.5 sm:p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-pine dark:text-stone-100">{group.name}</p>
                         <p className="mt-0.5 text-[11px] text-stone-500 dark:text-stone-400">{getAnimalLabel(group.animalType)} • {formatCurrency(group.pricePerSlot)}</p>
                       </div>
-                      <StatusBadge
-                        label={group.isFull ? 'Penuh' : `${group.slotsLeft} slot`}
-                        tone={group.isFull ? 'muted' : group.isUrgent ? 'danger' : 'success'}
+                      <GroupStatusBadge
+                        status={group.status}
+                        isFull={group.isFull}
+                        isUrgent={group.isUrgent}
+                        slotsLeft={group.slotsLeft}
+                        openLabelPrefix=""
                         className="text-[10px]"
                       />
                     </div>
-                    <div className="mt-2">
-                      <div className="progress-track h-1.5">
-                        <div
-                          className={`progress-bar ${group.isUrgent ? 'progress-bar-ember' : 'progress-bar-palm'}`}
-                          style={{ width: `${(group.filledSlots / group.capacity) * 100}%` }}
-                        />
-                      </div>
-                      <p className="mt-1 text-[11px] text-stone-500 dark:text-stone-400">{group.filledSlots}/{group.capacity} slot</p>
-                    </div>
+                    <GroupOccupancyProgress
+                      className="mt-2"
+                      percent={occupancy.percent}
+                      barClassName={group.isUrgent ? 'progress-bar-ember' : group.isFull ? 'progress-bar-stone' : 'progress-bar-palm'}
+                      caption={`${group.filledSlots}/${group.capacity} slot • ${occupancy.label}`}
+                      trackClassName="progress-track h-1.5"
+                      captionClassName="mt-1 text-[11px] text-stone-500 dark:text-stone-400"
+                    />
                     {group.notes ? <p className="mt-1.5 line-clamp-1 text-[11px] text-stone-500 dark:text-stone-400">{group.notes}</p> : null}
-                  </div>
-                ))}
+                  </div>;
+                })}
               </div>
             </>
           ) : (

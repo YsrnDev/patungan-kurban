@@ -10,6 +10,7 @@ Aplikasi web patungan kurban berbasis Next.js untuk alur publik dan operasional 
 - Manajemen grup tersedia di `app/dashboard/groups/page.tsx`.
 - Manajemen peserta dan perpindahan grup tersedia di `app/dashboard/participants/page.tsx`.
 - Manajemen staff tersedia di `app/dashboard/staff/page.tsx` dan dibatasi untuk role `admin`.
+- Viewer audit log admin tersedia di `app/dashboard/audit/page.tsx`.
 - Laporan operasional tersedia di `app/dashboard/reports/page.tsx`, termasuk export Excel dan PDF.
 
 ## Tech stack
@@ -44,6 +45,7 @@ Aturan akses utama:
 
 - `admin` dan `panitia` dapat membuka `/dashboard`, `/dashboard/groups`, `/dashboard/participants`, dan `/dashboard/reports`.
 - Hanya `admin` yang dapat membuka `/dashboard/staff`.
+- Hanya `admin` yang dapat membuka `/dashboard/staff` dan `/dashboard/audit`.
 - User yang berhasil login di Supabase Auth tetapi tidak aktif atau tidak ada di `staff_users` tetap ditolak di layer aplikasi.
 
 ## Catatan penting migration Supabase
@@ -53,6 +55,7 @@ Sebelum dashboard staff bisa dipakai penuh, jalankan migration berikut secara be
 - `supabase/migrations/0001_staff_users.sql`
 - `supabase/migrations/0002_qurban_data.sql`
 - `supabase/migrations/0003_qurban_seed.sql`
+- `supabase/migrations/0004_audit_logs.sql`
 
 Migration tersebut mencakup hal penting berikut:
 
@@ -80,6 +83,7 @@ Catatan setup SQL yang tetap relevan:
 - `0003_qurban_seed.sql` aman dijalankan ulang karena memakai `on conflict` untuk update seed/backfill.
 - App membaca data qurban via `lib/data/qurban-repository.ts` menggunakan service role di sisi server.
 - Jika migration belum dijalankan, login tetap bisa mengirim magic link tetapi akses dashboard akan gagal aman dengan error `staff_table_missing`.
+- Jika `0004_audit_logs.sql` belum dijalankan, dashboard audit tetap bisa dibuka oleh admin dan akan menampilkan notice bahwa tabel `audit_logs` belum tersedia.
 - Jika email bootstrap contoh tidak valid untuk inbox nyata, ubah seed migration atau insert manual record `staff_users` sebelum login pertama.
 
 ## PWA yang sudah diimplementasikan
@@ -184,6 +188,6 @@ Yang sudah ada sekarang:
 Limitasi yang masih relevan:
 
 - pembayaran masih diverifikasi manual oleh panitia
-- belum ada audit log aksi staff
+- audit log viewer admin membutuhkan migration `0004_audit_logs.sql` di project Supabase aktif
 - sinkronisasi lifecycle `auth.users` dan `staff_users` masih sederhana
 - mutasi dashboard masih mengandalkan server action + auth layer aplikasi, bukan client browser langsung ke RLS untuk admin workflow

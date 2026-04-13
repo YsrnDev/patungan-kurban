@@ -2,12 +2,13 @@ import Link from 'next/link';
 import { FileSpreadsheet, FileText, Download, Users, CreditCard, TrendingUp, AlertCircle } from 'lucide-react';
 
 import { MetricCard } from '@/components/dashboard/metric-card';
+import { GroupOccupancyProgress } from '@/components/dashboard/group-occupancy-progress';
+import { GroupStatusBadge } from '@/components/dashboard/group-status-badge';
 import { PaymentStatusBadge } from '@/components/dashboard/payment-status-badge';
-import { StatusBadge } from '@/components/status-badge';
 import { PageHeader } from '@/components/ui/page-header';
 import { requireOperationalUser } from '@/lib/auth';
 import { getDashboardReportsData, getReportAnimalLabel } from '@/lib/services/report-service';
-import { formatCurrency, formatDate, formatPercent } from '@/lib/utils';
+import { formatCurrency, formatDate, formatPercent, getOccupancyProgress } from '@/lib/utils';
 
 export default async function ReportsPage() {
   await requireOperationalUser({ next: '/dashboard/reports' });
@@ -95,7 +96,7 @@ export default async function ReportsPage() {
 
           <div className="space-y-3 border-t border-[color:var(--line-soft)] p-4 sm:hidden">
             {reports.paymentBreakdown.map((item) => {
-              const ratio = reports.summary.totalParticipants > 0 ? item.count / reports.summary.totalParticipants : 0;
+              const ratio = getOccupancyProgress(item.count, reports.summary.totalParticipants).ratio;
               const colorClass = item.status === 'paid' ? 'progress-bar-emerald' : item.status === 'partial' ? 'progress-bar-amber' : 'bg-stone-400';
               const percentClass = item.status === 'paid' ? 'text-emerald-700 dark:text-emerald-300' : item.status === 'partial' ? 'text-amber-700 dark:text-amber-300' : 'text-stone-600 dark:text-stone-400';
 
@@ -133,7 +134,7 @@ export default async function ReportsPage() {
               </thead>
               <tbody>
                 {reports.paymentBreakdown.map((item) => {
-                  const ratio = reports.summary.totalParticipants > 0 ? item.count / reports.summary.totalParticipants : 0;
+                  const ratio = getOccupancyProgress(item.count, reports.summary.totalParticipants).ratio;
                   const colorClass = item.status === 'paid' ? 'progress-bar-emerald' : item.status === 'partial' ? 'progress-bar-amber' : 'bg-stone-400';
                   const percentClass = item.status === 'paid' ? 'text-emerald-700 dark:text-emerald-300' : item.status === 'partial' ? 'text-amber-700 dark:text-amber-300' : 'text-stone-600 dark:text-stone-400';
 
@@ -197,9 +198,12 @@ export default async function ReportsPage() {
                     <p className="font-semibold text-pine dark:text-stone-100">{group.name}</p>
                     <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{getReportAnimalLabel(group.animalType)} • {formatCurrency(group.pricePerSlot)}</p>
                   </div>
-                  <StatusBadge
-                    label={group.isFull ? 'Penuh' : group.status === 'closed' ? 'Ditutup' : `Tersisa ${group.slotsLeft}`}
-                    tone={group.isFull ? 'muted' : group.isUrgent ? 'danger' : group.status === 'closed' ? 'warning' : 'success'}
+                  <GroupStatusBadge
+                    status={group.status}
+                    isFull={group.isFull}
+                    isUrgent={group.isUrgent}
+                    slotsLeft={group.slotsLeft}
+                    openLabelPrefix="Tersisa "
                     className="shrink-0"
                   />
                 </div>
@@ -209,12 +213,13 @@ export default async function ReportsPage() {
                     <span>Okupansi</span>
                     <span>{group.filledSlots}/{group.capacity} • {group.occupancyLabel}</span>
                   </div>
-                  <div className="progress-track progress-track-sm mt-2">
-                    <div
-                      className={`progress-bar ${group.isUrgent ? 'progress-bar-ember' : group.isFull ? 'progress-bar-stone' : 'progress-bar-palm'}`}
-                      style={{ width: `${group.occupancyRate * 100}%` }}
-                    />
-                  </div>
+                  <GroupOccupancyProgress
+                    percent={group.occupancyRate * 100}
+                    barClassName={group.isUrgent ? 'progress-bar-ember' : group.isFull ? 'progress-bar-stone' : 'progress-bar-palm'}
+                    caption=""
+                    trackClassName="progress-track progress-track-sm mt-2"
+                    captionClassName="hidden"
+                  />
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center">
@@ -253,16 +258,15 @@ export default async function ReportsPage() {
                       <p className="text-xs text-stone-500 dark:text-stone-400">{getReportAnimalLabel(group.animalType)} • {formatCurrency(group.pricePerSlot)}</p>
                     </td>
                     <td>
-                      <div className="w-32">
-                        <div className="progress-track progress-track-sm">
-                          <div
-                            className={`progress-bar ${group.isUrgent ? 'progress-bar-ember' : group.isFull ? 'progress-bar-stone' : 'progress-bar-palm'}`}
-                            style={{ width: `${group.occupancyRate * 100}%` }}
-                          />
-                        </div>
-                        <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">{group.filledSlots}/{group.capacity} • {group.occupancyLabel}</p>
-                      </div>
-                    </td>
+                        <GroupOccupancyProgress
+                          className="w-32"
+                          percent={group.occupancyRate * 100}
+                          barClassName={group.isUrgent ? 'progress-bar-ember' : group.isFull ? 'progress-bar-stone' : 'progress-bar-palm'}
+                          caption={`${group.filledSlots}/${group.capacity} • ${group.occupancyLabel}`}
+                          trackClassName="progress-track progress-track-sm"
+                          captionClassName="mt-1.5 text-xs text-stone-500 dark:text-stone-400"
+                        />
+                      </td>
                     <td>
                       <div className="flex flex-col gap-0.5 text-xs">
                         <span className="font-medium text-emerald-700 dark:text-emerald-300">{group.paymentPaidCount} lunas</span>
@@ -270,9 +274,12 @@ export default async function ReportsPage() {
                       </div>
                     </td>
                     <td>
-                      <StatusBadge
-                        label={group.isFull ? 'Penuh' : group.status === 'closed' ? 'Ditutup' : `Tersisa ${group.slotsLeft}`}
-                        tone={group.isFull ? 'muted' : group.isUrgent ? 'danger' : group.status === 'closed' ? 'warning' : 'success'}
+                      <GroupStatusBadge
+                        status={group.status}
+                        isFull={group.isFull}
+                        isUrgent={group.isUrgent}
+                        slotsLeft={group.slotsLeft}
+                        openLabelPrefix="Tersisa "
                       />
                     </td>
                   </tr>

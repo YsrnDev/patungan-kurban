@@ -1,7 +1,7 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
-import { FileText, FolderOpen, LayoutGrid, Shield, Users } from 'lucide-react';
+import { FileSearch, FileText, FolderOpen, LayoutGrid, Shield, Users } from 'lucide-react';
 
 export interface DashboardNavItem {
   href: string;
@@ -14,7 +14,7 @@ export interface DashboardNavItem {
 export const dashboardNavItems: DashboardNavItem[] = [
   {
     href: '/dashboard',
-    label: 'Overview',
+    label: 'Ringkasan',
     icon: LayoutGrid,
     exact: true,
   },
@@ -35,8 +35,14 @@ export const dashboardNavItems: DashboardNavItem[] = [
   },
   {
     href: '/dashboard/staff',
-    label: 'Staff',
+    label: 'Panitia',
     icon: Shield,
+    adminOnly: true,
+  },
+  {
+    href: '/dashboard/audit',
+    label: 'Log Audit',
+    icon: FileSearch,
     adminOnly: true,
   },
 ];

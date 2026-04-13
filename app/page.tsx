@@ -7,7 +7,7 @@ import { SectionHeading } from '@/components/section-heading';
 import { StatusBadge } from '@/components/status-badge';
 import { HomeAnimations } from '@/components/animations/home-animations';
 import { getPublicData } from '@/lib/services/qurban-service';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getOccupancyProgress } from '@/lib/utils';
 import { getAnimalLabel } from '@/lib/validation';
 
 export default async function HomePage() {
@@ -112,15 +112,7 @@ export default async function HomePage() {
                     width={1200}
                     height={1000}
                     priority
-                    className="relative z-10 h-auto max-h-[260px] w-full object-contain brightness-[0.76] contrast-[1.01] saturate-[0.86] sepia-[0.03] drop-shadow-[0_16px_28px_rgba(21,54,41,0.1)] sm:max-h-none sm:object-cover sm:drop-shadow-[0_22px_44px_rgba(21,54,41,0.1)] dark:hidden"
-                  />
-                  <Image
-                    src="/img/hero.webp"
-                    alt="Ilustrasi patungan kurban"
-                    width={1200}
-                    height={1000}
-                    priority
-                    className="relative z-10 hidden h-auto max-h-[260px] w-full object-contain brightness-[0.74] contrast-[1.03] saturate-[0.84] sepia-[0.05] drop-shadow-[0_16px_28px_rgba(0,0,0,0.24)] sm:max-h-none sm:object-cover sm:drop-shadow-[0_22px_44px_rgba(0,0,0,0.24)] dark:block"
+                    className="relative z-10 h-auto max-h-[260px] w-full object-contain brightness-[0.76] contrast-[1.01] saturate-[0.86] sepia-[0.03] drop-shadow-[0_16px_28px_rgba(21,54,41,0.1)] sm:max-h-none sm:object-cover sm:drop-shadow-[0_22px_44px_rgba(21,54,41,0.1)] dark:brightness-[0.74] dark:contrast-[1.03] dark:saturate-[0.84] dark:sepia-[0.05] dark:drop-shadow-[0_16px_28px_rgba(0,0,0,0.24)] dark:sm:drop-shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
                   />
                 </div>
               </div>
@@ -138,9 +130,9 @@ export default async function HomePage() {
             />
           </div>
 
-          <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 xl:grid-cols-3">
             {featuredGroups.map((group) => {
-              const progressPercent = (group.filledSlots / group.capacity) * 100;
+              const occupancy = getOccupancyProgress(group.filledSlots, group.capacity);
               const isAvailable = !group.isFull && group.status === 'open';
               const hasTopBadge = group.isUrgent || group.isFull;
 
@@ -203,7 +195,7 @@ export default async function HomePage() {
                           className={`progress-bar-fill h-full rounded-full transition-all duration-500 ${
                             group.isUrgent ? 'bg-ember' : 'bg-palm'
                           }`}
-                          style={{ width: `${progressPercent}%` }}
+                          style={{ width: `${occupancy.percent}%` }}
                         />
                       </div>
                       <div className="mt-3 flex items-center justify-between border-t border-stone-300/30 pt-3 dark:border-stone-700/50">
@@ -215,7 +207,7 @@ export default async function HomePage() {
                     <div className="mt-auto space-y-3">
                       <div className="flex items-start justify-between gap-3 text-sm text-stone-500 dark:text-stone-400">
                         <span className="pr-2">{isAvailable ? 'Bisa langsung dipilih di formulir.' : 'Tetap terlihat untuk referensi jamaah.'}</span>
-                        <span className="font-semibold text-stone-700 dark:text-stone-200">{Math.round(progressPercent)}%</span>
+                        <span className="font-semibold text-stone-700 dark:text-stone-200">{occupancy.label}</span>
                       </div>
                       <Link
                         href={isAvailable ? `/register?groupId=${group.id}` : '/register'}

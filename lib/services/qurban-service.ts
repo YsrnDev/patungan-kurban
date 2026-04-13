@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { unstable_noStore as noStore } from 'next/cache';
 
 import {
@@ -146,7 +148,7 @@ export async function createGroup(input: GroupInput) {
   const payload = validateGroupInput(input);
 
   try {
-    await createGroupRecord(payload);
+    return await createGroupRecord(payload);
   } catch (error) {
     throw mapMutationError(error, 'Gagal membuat grup.');
   }
@@ -156,7 +158,7 @@ export async function updateGroup(groupId: string, input: GroupInput) {
   const payload = validateGroupInput(input);
 
   try {
-    await updateGroupRecord({ groupId, ...payload });
+    return await updateGroupRecord({ groupId, ...payload });
   } catch (error) {
     throw mapMutationError(error, 'Gagal memperbarui grup.');
   }
@@ -174,7 +176,7 @@ export async function addParticipantByAdmin(input: ParticipantInput) {
   const payload = validateParticipantInput(input);
 
   try {
-    await insertParticipantWithCapacityCheck({
+    return await insertParticipantWithCapacityCheck({
       groupId: payload.groupId,
       fullName: payload.fullName,
       phone: payload.phone,
@@ -189,7 +191,7 @@ export async function addParticipantByAdmin(input: ParticipantInput) {
 
 export async function moveParticipant(participantId: string, targetGroupId: string) {
   try {
-    await moveParticipantRecord(participantId, targetGroupId);
+    return await moveParticipantRecord(participantId, targetGroupId);
   } catch (error) {
     throw mapMutationError(error, 'Gagal memindahkan peserta.');
   }
@@ -197,7 +199,7 @@ export async function moveParticipant(participantId: string, targetGroupId: stri
 
 export async function updateParticipantPayment(participantId: string, paymentStatus: ParticipantInput['paymentStatus']) {
   try {
-    await updateParticipantPaymentRecord(participantId, paymentStatus);
+    return await updateParticipantPaymentRecord(participantId, paymentStatus);
   } catch (error) {
     throw mapMutationError(error, 'Gagal memperbarui status pembayaran peserta.');
   }

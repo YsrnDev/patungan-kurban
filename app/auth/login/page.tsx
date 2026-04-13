@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowLeft, MailCheck, Sparkles } from 'lucide-react';
 
@@ -6,6 +7,7 @@ import { LogoutButton } from '@/components/auth/logout-button';
 import { BrandLogo } from '@/components/brand-logo';
 import { AppAlert } from '@/components/ui/app-alert';
 import { getCurrentAuthContext } from '@/lib/auth';
+import { resolveLoginFlash } from '@/lib/flash';
 import { getSupabasePublicEnvStatus } from '@/lib/supabase/config';
 
 const COPYRIGHT_YEAR = 2026;
@@ -21,6 +23,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const nextPath = searchParams.next?.startsWith('/') ? searchParams.next : '/dashboard';
   const supabaseEnv = getSupabasePublicEnvStatus();
   const { user, staffUser, authErrorReason } = await getCurrentAuthContext();
+  const errorFlash = resolveLoginFlash(searchParams.error);
 
   if (user && staffUser?.isActive) {
     redirect(nextPath);
@@ -60,9 +63,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 </div>
               </div>
 
-              {searchParams.error ? (
+              {errorFlash ? (
                 <div className="mb-5">
-                  <AppAlert tone="error">{searchParams.error}</AppAlert>
+                  <AppAlert tone={errorFlash.tone}>{errorFlash.message}</AppAlert>
                 </div>
               ) : null}
 
@@ -102,13 +105,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               <LoginForm nextPath={nextPath} defaultEmail={user?.email ?? ''} />
 
               <div className="mt-8 flex flex-col items-center gap-4 border-t border-stone-200/60 pt-6 text-center dark:border-stone-800/60">
-                <a
+                <Link
                   href="/"
                   className="group/link inline-flex items-center gap-2 text-sm font-semibold text-stone-600 transition-all hover:text-pine hover:gap-3 dark:text-stone-400 dark:hover:text-stone-100"
                 >
                   <ArrowLeft className="h-4 w-4 transition-transform group-hover/link:-translate-x-1" />
                   Kembali ke beranda
-                </a>
+                </Link>
                 <p className="text-xs font-medium text-stone-400 dark:text-stone-600">
                   © {COPYRIGHT_YEAR} Patungan Kurban. Semua hak cipta dilindungi.
                 </p>

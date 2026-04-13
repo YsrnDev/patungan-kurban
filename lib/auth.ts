@@ -1,8 +1,11 @@
+import 'server-only';
+
 import { type User } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 
 import { hasAdminAccess, hasDashboardAccess, hasOperationalAccess } from '@/lib/config/authz';
+import { getLoginFlashCodeForAuthReason } from '@/lib/flash';
 import { getSupabasePublicEnvStatus } from '@/lib/supabase/config';
 import {
   getStaffUserByEmail,
@@ -86,8 +89,10 @@ export async function canAccessDashboard(): Promise<boolean> {
 }
 
 function redirectForAuthError(nextPath: string, reason: string | null) {
-  if (reason === 'supabase_env_missing') {
-    redirect(`/auth/login?next=${encodeURIComponent(nextPath)}&error=${encodeURIComponent('Konfigurasi Supabase publik belum lengkap.')}`);
+  const loginFlashCode = getLoginFlashCodeForAuthReason(reason);
+
+  if (loginFlashCode) {
+    redirect(`/auth/login?next=${encodeURIComponent(nextPath)}&error=${encodeURIComponent(loginFlashCode)}`);
   }
 
   if (reason === 'staff_table_missing') {
@@ -162,4 +167,18 @@ export async function requireOperationalUserApi(): Promise<ApiAuthorizedAuthCont
   }
 
   return { user, staffUser };
+}
+
+export async function requireAdminUserApi(): Promise<ApiAuthorizedAuthContext | NextResponse> {
+  const context = await requireOperationalUserApi();
+
+  if (context instanceof NextResponse) {
+    return context;
+  }
+
+  if (!hasAdminAccess(context.staffUser)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  return context;
 }
