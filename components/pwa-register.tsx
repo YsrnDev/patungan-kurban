@@ -2,8 +2,6 @@
 
 import { useEffect } from 'react';
 
-import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
-
 export function PwaRegister() {
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production' || !('serviceWorker' in navigator)) {
@@ -34,5 +32,5 @@ export function PwaRegister() {
     };
   }, []);
 
-  return <PwaInstallPrompt />;
+  return null;
 }

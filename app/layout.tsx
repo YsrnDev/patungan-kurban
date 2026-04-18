@@ -2,10 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Sora } from 'next/font/google';
 
 import '@/app/globals.css';
-import { AppChrome } from '@/components/app-chrome';
-import { PwaLaunchSplash } from '@/components/pwa-launch-splash';
 import { PwaRegister } from '@/components/pwa-register';
-import { getCurrentUser } from '@/lib/auth';
 
 const sans = Inter({
   subsets: ['latin'],
@@ -49,9 +46,7 @@ export const viewport: Viewport = {
   colorScheme: 'light dark',
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const currentUser = await getCurrentUser();
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <body className={`${sans.variable} ${serif.variable} font-sans text-ink antialiased`}>
@@ -61,12 +56,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }}
         />
         <PwaRegister />
-        <PwaLaunchSplash />
         <div className="app-shell relative overflow-x-clip">
           <div className="absolute inset-x-0 top-0 -z-10 h-[580px] bg-hero-glow dark:opacity-70" />
           <div className="absolute left-[-12rem] top-32 -z-10 h-72 w-72 rounded-full bg-amber-100/50 blur-3xl dark:bg-amber-700/20" />
           <div className="absolute right-[-10rem] top-56 -z-10 h-80 w-80 rounded-full bg-palm/10 blur-3xl dark:bg-palm/20" />
-          <AppChrome isAuthenticated={Boolean(currentUser)}>{children}</AppChrome>
+          {children}
         </div>
       </body>
     </html>

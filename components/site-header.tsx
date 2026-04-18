@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -18,7 +19,14 @@ interface SiteHeaderProps {
 }
 
 export function SiteHeader({ isAuthenticated }: SiteHeaderProps) {
+  const pathname = usePathname() ?? '/';
+  const isHomePage = pathname === '/';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -33,6 +41,26 @@ export function SiteHeader({ isAuthenticated }: SiteHeaderProps) {
       root.classList.remove('public-mobile-menu-open');
     };
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!isHomePage) {
+      setHasScrolled(true);
+      return;
+    }
+
+    const threshold = 36;
+
+    function handleScroll() {
+      setHasScrolled(window.scrollY > threshold);
+    }
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isHomePage]);
 
   useEffect(() => {
     function handleResize() {
@@ -56,8 +84,17 @@ export function SiteHeader({ isAuthenticated }: SiteHeaderProps) {
     setMobileMenuOpen((current) => !current);
   }
 
+  const headerClassName = [
+    'site-header top-0 z-50 border-b backdrop-blur-xl transition-[background-color,border-color,box-shadow,transform] duration-300',
+    isHomePage
+      ? hasScrolled
+        ? 'site-header-solid fixed inset-x-0'
+        : 'site-header-home site-header-home-top fixed inset-x-0'
+      : 'site-header-solid sticky',
+  ].join(' ');
+
   return (
-    <header className="site-header sticky top-0 z-50 border-b border-white/60 bg-sand/88 backdrop-blur-xl dark:border-stone-800 dark:bg-stone-950/70">
+    <header className={headerClassName}>
       <div className="relative mx-auto flex max-w-7xl flex-col px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-3 lg:gap-6">
           <Link href="/" className="brand-logo-link flex min-w-0 items-center gap-3" onClick={closeMobileMenu}>

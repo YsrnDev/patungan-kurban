@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Users, CheckCircle2, Sparkles, ChevronRight, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Sparkles, ChevronRight, ShieldCheck } from 'lucide-react';
 
 import { AutoRefresh } from '@/components/auto-refresh';
 import { SectionHeading } from '@/components/section-heading';
@@ -33,7 +33,7 @@ export default async function HomePage() {
             <div className="absolute right-1/4 top-40 h-80 w-80 rounded-full bg-palm/15 blur-3xl dark:bg-palm/20" />
           </div>
 
-          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+          <div className="mx-auto max-w-7xl px-4 pb-8 pt-16 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
             <div className="grid items-center gap-7 sm:gap-9 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
               <div className="hero-animate order-2 flex flex-col justify-center space-y-4 sm:order-none sm:space-y-6 lg:space-y-8">
                 <div className="hero-animate inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-3.5 py-1.5 text-xs font-medium text-pine dark:border-gold/20 dark:bg-gold/10 dark:text-gold sm:px-4 sm:py-2 sm:text-sm">
@@ -248,102 +248,77 @@ export default async function HomePage() {
               </p>
             </div>
 
-            <div className="relative grid gap-6 lg:grid-cols-3 lg:gap-8">
-              <div className="timeline-flow-rail absolute bottom-[7.25rem] left-4 top-[7.25rem] hidden w-[4px] rounded-full bg-gradient-to-b from-gold via-gold/75 to-white/25 shadow-[0_0_18px_rgba(214,170,95,0.28)] sm:block lg:hidden" />
-              <div className="timeline-flow-rail absolute bottom-[7.25rem] left-4 top-[7.25rem] w-[4px] rounded-full bg-gradient-to-b from-gold via-gold/75 to-white/25 shadow-[0_0_18px_rgba(214,170,95,0.28)] sm:hidden lg:hidden" />
-              {[
-                {
-                  step: '01',
-                  icon: CheckCircle2,
-                  title: 'Cek Slot Real-Time',
-                  description: 'Mulai dari daftar grup yang tersedia agar Anda langsung tahu pilihan yang masih bisa diambil.',
-                  color: 'from-gold/20 to-gold/5',
-                  iconColor: 'text-gold',
-                },
-                {
-                  step: '02',
-                  icon: Users,
-                  title: 'Isi Formulir Mandiri',
-                  description: 'Pilih grup, isi data peserta, lalu sistem membantu menjaga kapasitas grup tetap sesuai.',
-                  color: 'from-palm/30 to-palm/10',
-                  iconColor: 'text-palm',
-                },
-                {
-                  step: '03',
-                  icon: Sparkles,
-                  title: 'Panitia Follow Up',
-                  description: 'Setelah masuk, panitia tinggal memantau progres, pembayaran, dan grup prioritas dari dashboard.',
-                  color: 'from-white/10 to-white/5',
-                  iconColor: 'text-white',
-                },
-              ].map((item, index) => (
-                <div key={item.step} className="relative h-full pl-10 lg:pl-0">
-                  <div className="absolute left-[0.18rem] top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-gold/70 bg-pine shadow-[0_0_0_8px_rgba(21,54,41,0.32)] lg:hidden">
-                    <div className="h-3 w-3 rounded-full bg-gold shadow-[0_0_10px_rgba(214,170,95,0.45)]" />
-                  </div>
-
-                  <div
-                    className="step-card group relative flex h-full flex-col overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-b p-6 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 sm:p-8"
-                    style={{
-                      background: `linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)`,
-                    }}
-                  >
-                    <div className={`absolute -right-10 -top-10 h-40 w-40 rounded-full bg-gradient-to-br ${item.color} opacity-0 blur-3xl transition-opacity group-hover:opacity-100`} />
-                    
-                    <div className="relative flex h-full flex-col">
-                      <div className="mb-6 flex items-center justify-between">
-                        <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm`}>
-                          <item.icon className={`h-6 w-6 ${item.iconColor}`} />
-                        </div>
-                        <span className="font-serif-display text-5xl font-bold text-white/10">{item.step}</span>
-                      </div>
- 
-                      <h3 className="mb-3 text-xl font-bold text-white">{item.title}</h3>
-                      <p className="text-sm leading-relaxed text-white/70">{item.description}</p>
-                    </div>
- 
-                    {index < 2 && (
-                      <div className="absolute -right-4 top-1/2 hidden -translate-y-1/2 lg:block">
-                        <ArrowRight className="h-6 w-6 text-white/20" />
-                      </div>
-                    )}
-                  </div>
+            <div className="grid gap-5 md:grid-cols-3 md:gap-6">
+              <article className="step-card rounded-[28px] border border-white/10 bg-white/10 p-6 backdrop-blur-sm dark:border-white/5 dark:bg-white/[0.06] sm:p-7">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/20 text-lg font-bold text-gold">
+                  1
                 </div>
-              ))}
+                <h3 className="mt-5 text-xl font-semibold text-white">Pantau slot yang tersedia</h3>
+                <p className="mt-3 text-sm leading-7 text-white/75">
+                  Lihat grup yang masih terbuka, cek sisa slot, dan prioritaskan grup urgent agar patungan lebih cepat lengkap.
+                </p>
+              </article>
+
+              <article className="step-card rounded-[28px] border border-white/10 bg-white/10 p-6 backdrop-blur-sm dark:border-white/5 dark:bg-white/[0.06] sm:p-7">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/20 text-lg font-bold text-gold">
+                  2
+                </div>
+                <h3 className="mt-5 text-xl font-semibold text-white">Isi formulir dengan singkat</h3>
+                <p className="mt-3 text-sm leading-7 text-white/75">
+                  Pilih grup yang diinginkan, isi nama, nomor WhatsApp, domisili, dan catatan tambahan bila diperlukan.
+                </p>
+              </article>
+
+              <article className="step-card rounded-[28px] border border-white/10 bg-white/10 p-6 backdrop-blur-sm dark:border-white/5 dark:bg-white/[0.06] sm:p-7">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/20 text-lg font-bold text-gold">
+                  3
+                </div>
+                <h3 className="mt-5 text-xl font-semibold text-white">Panitia verifikasi lanjutan</h3>
+                <p className="mt-3 text-sm leading-7 text-white/75">
+                  Setelah pendaftaran masuk, panitia akan menghubungi jamaah untuk verifikasi pembayaran manual melalui WhatsApp.
+                </p>
+              </article>
             </div>
 
-            <div className="mt-16 text-center">
-              <Link
-                href="/register"
-                className="cta-animate group inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-semibold text-pine shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
-              >
-                Mulai Pendaftaran
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
+            <div className="mt-8 grid gap-4 rounded-[30px] border border-white/10 bg-white/8 p-5 text-sm text-white/75 backdrop-blur-sm dark:border-white/5 dark:bg-white/[0.04] sm:mt-10 sm:grid-cols-3 sm:gap-6 sm:p-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold/80">Deadline</p>
+                <p className="mt-2 text-base font-semibold text-white">{mosque.registrationDeadline}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold/80">Kontak Panitia</p>
+                <p className="mt-2 text-base font-semibold text-white">{mosque.contactPhone}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold/80">Status Saat Ini</p>
+                <p className="mt-2 text-base font-semibold text-white">
+                  {urgentGroups.length > 0 ? `${urgentGroups.length} grup perlu segera dilengkapi` : 'Slot dibuka sesuai ketersediaan panitia'}
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Final CTA */}
+        {/* Final CTA Section */}
         <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-          <div className="section-heading-animate overflow-hidden rounded-[32px] border border-stone-200/80 bg-white/85 p-6 shadow-soft backdrop-blur-sm dark:border-stone-800 dark:bg-stone-900/80 sm:p-8 lg:p-10">
-            <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
-              <div className="space-y-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.25em] text-ember">Siap Mendaftar</p>
-                <h2 className="font-serif-display text-3xl font-bold text-pine dark:text-stone-100 sm:text-4xl">Pilih grup yang cocok lalu amankan slot Anda hari ini</h2>
-                <p className="max-w-2xl text-sm leading-7 text-stone-600 dark:text-stone-300 sm:text-base">
-                  Semua status grup tetap terlihat secara terbuka. Jika sudah menentukan pilihan, lanjutkan ke formulir pendaftaran agar panitia bisa segera memproses partisipasi Anda.
+          <div className="section-heading-animate overflow-hidden rounded-[34px] border border-pine/10 bg-[linear-gradient(135deg,rgba(21,54,41,0.98)_0%,rgba(47,94,75,0.94)_52%,rgba(214,170,95,0.92)_100%)] px-6 py-8 text-white shadow-[0_24px_80px_rgba(21,54,41,0.18)] sm:px-8 sm:py-10 lg:px-12 lg:py-12">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-gold/85">Siap Mendaftar</p>
+                <h2 className="mt-3 font-serif-display text-3xl font-bold sm:text-4xl lg:text-5xl">
+                  Pilih grup terbaik dan amankan slot kurban Anda.
+                </h2>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">
+                  Beranda menampilkan status slot secara transparan, sedangkan formulir pendaftaran hanya membuka grup yang masih tersedia agar proses tetap aman dari overbooking.
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-                <Link href="/register" className="button-primary group gap-2 px-6 py-3.5">
-                  Daftar Sekarang
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
+                <Link href="/register" className="cta-animate button-primary justify-center border border-white/10 bg-white text-pine hover:bg-sand sm:min-w-[220px]">
+                  Buka Form Pendaftaran
                 </Link>
-                <Link href="#slot-tersedia" className="button-secondary gap-2 px-6 py-3.5">
-                  Lihat Slot Tersedia
-                  <ChevronRight className="h-4 w-4" />
+                <Link href="/auth/login" className="cta-animate button-secondary justify-center border-white/25 bg-white/10 text-white hover:bg-white/15 sm:min-w-[220px]">
+                  Login Panitia
                 </Link>
               </div>
             </div>

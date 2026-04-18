@@ -300,6 +300,56 @@ body {
     pointer-events: none;
   }
 
+  .site-header-solid {
+    @apply shadow-[0_12px_30px_rgba(21,54,41,0.08)] dark:border-stone-800;
+    border-color: rgba(255, 255, 255, 0.6);
+    background-color: rgba(247, 240, 229, 0.88);
+  }
+
+  .dark .site-header-solid {
+    background-color: rgba(28, 25, 23, 0.7);
+  }
+
+  .site-header-home {
+    @apply border-transparent bg-transparent shadow-none;
+  }
+
+  .site-header-home-top {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .site-header-home-top::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 249, 240, 0.24) 0%, rgba(255, 249, 240, 0.08) 58%, rgba(255, 249, 240, 0) 100%);
+    pointer-events: none;
+  }
+
+  .dark .site-header-home-top::before {
+    background: linear-gradient(180deg, rgba(18, 22, 19, 0.36) 0%, rgba(18, 22, 19, 0.14) 58%, rgba(18, 22, 19, 0) 100%);
+  }
+
+  .site-header-home-top .brand-logo-link,
+  .site-header-home-top nav,
+  .site-header-home-top .public-menu-button,
+  .site-header-home-top .theme-toggle-public-header-icon {
+    position: relative;
+    z-index: 1;
+  }
+
+  .site-header-home-top .public-menu-button {
+    @apply text-pine shadow-[0_10px_24px_rgba(21,54,41,0.08)] dark:text-stone-100;
+    border-color: rgba(255, 255, 255, 0.55);
+    background-color: rgba(255, 255, 255, 0.78);
+  }
+
+  .dark .site-header-home-top .public-menu-button {
+    border-color: rgba(68, 64, 60, 0.7);
+    background-color: rgba(28, 25, 23, 0.72);
+  }
+
   .theme-toggle-sidebar {
     @apply w-full justify-between rounded-2xl px-3 py-3 text-left text-sm;
     background-color: rgba(255, 251, 244, 0.92);
@@ -499,6 +549,24 @@ body {
 
   .dark .site-header .theme-toggle-public-header-icon:focus-visible::after {
     box-shadow: 0 0 0 2px rgba(241, 211, 139, 0.26);
+  }
+
+  .site-header-home-top .theme-toggle-public-header-icon {
+    color: #3e4d43;
+  }
+
+  .site-header-home-top .theme-toggle-public-header-icon:hover,
+  .site-header-home-top .theme-toggle-public-header-icon:focus-visible {
+    color: #2f5e4b;
+  }
+
+  .dark .site-header-home-top .theme-toggle-public-header-icon {
+    color: #e7dbc7;
+  }
+
+  .dark .site-header-home-top .theme-toggle-public-header-icon:hover,
+  .dark .site-header-home-top .theme-toggle-public-header-icon:focus-visible {
+    color: #f1d38b;
   }
 
   .dark .dashboard-mobile-header .theme-toggle-mobile-header,
@@ -1234,7 +1302,8 @@ body {
   }
 
   .public-mobile-theme-toggle {
-    @apply min-h-[48px] rounded-2xl border border-pine/10 bg-sand/70 px-4 py-3 text-sm font-semibold text-pine shadow-none;
+    @apply min-h-[48px] rounded-2xl border border-pine/10 px-4 py-3 text-sm font-semibold text-pine shadow-none;
+    background-color: rgba(247, 240, 229, 0.7);
   }
 
   .public-mobile-theme-toggle:hover,
@@ -1380,6 +1449,10 @@ body {
 
   .site-header {
     @apply border-white/70;
+  }
+
+  .site-header-home {
+    @apply border-transparent;
   }
 
   .site-header .brand-logo-copy {
